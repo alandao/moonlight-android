@@ -55,4 +55,15 @@
         <item>forceh265</item>
         <item>neverh265</item>
     </string-array>
+
+    <string-array name="vr_names">
+        <item>Don\'t enable VR</item>
+        <item>Virtual Monitor</item>
+        <item>SteamVR</item>
+    </string-array>
+    <string-array name="vr_values" translatable="false">
+        <item>auto</item>
+        <item>virtualmonitor</item>
+        <item>steamvr</item>
+    </string-array>
 </resources>

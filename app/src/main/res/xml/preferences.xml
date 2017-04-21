@@ -99,10 +99,12 @@
             android:defaultValue="auto" />
     </PreferenceCategory>
     <PreferenceCategory android:title="@string/category_virtual_reality">
-        <CheckBoxPreference
-            android:key="checkbox_google_vr_mode"
-            android:title="@string/title_google_vr_mode"
-            android:summary="@string/summary_google_vr_mode"
-            android:defaultValue="false" />
+        <ListPreference
+            android:key="vr_settings"
+            android:title="@string/title_vr_settings"
+            android:entries="@array/vr_names"
+            android:entryValues="@array/vr_values"
+            android:summary="@string/summary_vr_settings"
+            android:defaultValue="auto" />
     </PreferenceCategory>
 </PreferenceScreen>

@@ -132,11 +132,16 @@ public class Game extends Activity implements SurfaceHolder.Callback,
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        boolean launchCardboardMode = PreferenceConfiguration.readPreferences(this).googleCardboardMode;
-        if (launchCardboardMode) {
+
+        // Read the stream preferences
+        prefConfig = PreferenceConfiguration.readPreferences(this);
+
+        if (prefConfig.vrMode == PreferenceConfiguration.VR_MONITOR) {
             Intent intent = new Intent(this, VirtualRealityGame.class);
             intent.putExtras(Game.this.getIntent());
             startActivity(intent);
+            finish();
+        } else if (prefConfig.vrMode == PreferenceConfiguration.VR_STEAMVR) {
             finish();
         } else {
 
@@ -180,9 +185,6 @@ public class Game extends Activity implements SurfaceHolder.Callback,
             // Start the spinner
             spinner = SpinnerDialog.displayDialog(this, getResources().getString(R.string.conn_establishing_title),
                     getResources().getString(R.string.conn_establishing_msg), true);
-
-            // Read the stream preferences
-            prefConfig = PreferenceConfiguration.readPreferences(this);
 
             if (prefConfig.stretchVideo) {
                 drFlags |= VideoDecoderRenderer.FLAG_FILL_SCREEN;

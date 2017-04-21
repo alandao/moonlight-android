@@ -23,7 +23,7 @@ public class PreferenceConfiguration {
     private static final String USB_DRIVER_PREF_SRING = "checkbox_usb_driver";
     private static final String VIDEO_FORMAT_PREF_STRING = "video_format";
     private static final String ONSCREEN_CONTROLLER_PREF_STRING = "checkbox_show_onscreen_controls";
-    private static final String GOOGLE_VR_PREF_SRING = "checkbox_google_vr_mode";
+    private static final String VR_PREF_STRING = "vr_settings";
 
 
     private static final int BITRATE_DEFAULT_720_30 = 5;
@@ -47,21 +47,25 @@ public class PreferenceConfiguration {
     private static final boolean DEFAULT_USB_DRIVER = true;
     private static final String DEFAULT_VIDEO_FORMAT = "auto";
     private static final boolean ONSCREEN_CONTROLLER_DEFAULT = false;
-    private static final boolean GOOGLE_CARDBOARD_MODE = false;
+    private static final String DEFAULT_VR_MODE = "auto";
 
     public static final int FORCE_H265_ON = -1;
     public static final int AUTOSELECT_H265 = 0;
     public static final int FORCE_H265_OFF = 1;
 
+    public static final int VR_STEAMVR = -1;
+    public static final int VR_DISABLED = 0;
+    public static final int VR_MONITOR = 1;
+
     public int width, height, fps;
     public int bitrate;
     public int videoFormat;
+    public int vrMode;
     public int deadzonePercentage;
     public boolean stretchVideo, enableSops, playHostAudio, disableWarnings;
     public String language;
     public boolean listMode, smallIconMode, multiController, enable51Surround, usbDriver;
     public boolean onscreenController;
-    public boolean googleCardboardMode;
 
     public static int getDefaultBitrate(String resFpsString) {
         if (resFpsString.equals("720p30")) {
@@ -88,6 +92,7 @@ public class PreferenceConfiguration {
         }
     }
 
+
     public static boolean getDefaultSmallMode(Context context) {
         PackageManager manager = context.getPackageManager();
         if (manager != null) {
@@ -113,6 +118,22 @@ public class PreferenceConfiguration {
         return getDefaultBitrate(prefs.getString(RES_FPS_PREF_STRING, DEFAULT_RES_FPS));
     }
 
+    public static int getVRValue(Context context) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+
+        String str = prefs.getString(VR_PREF_STRING, DEFAULT_VR_MODE);
+        if (str.equals("auto")) {
+            return VR_DISABLED;
+        } else if (str.equals("virtualmonitor")) {
+            return VR_MONITOR;
+        } else if (str.equals("steamvr")) {
+            return VR_STEAMVR;
+        } else {
+            //Should never get here
+            return VR_DISABLED;
+        }
+
+    }
     private static int getVideoFormatValue(Context context) {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
 
@@ -177,6 +198,8 @@ public class PreferenceConfiguration {
 
         config.videoFormat = getVideoFormatValue(context);
 
+        config.vrMode = getVRValue(context);
+
         config.deadzonePercentage = prefs.getInt(DEADZONE_PREF_STRING, DEFAULT_DEADZONE);
 
         config.language = prefs.getString(LANGUAGE_PREF_STRING, DEFAULT_LANGUAGE);
@@ -192,7 +215,6 @@ public class PreferenceConfiguration {
         config.enable51Surround = prefs.getBoolean(ENABLE_51_SURROUND_PREF_STRING, DEFAULT_ENABLE_51_SURROUND);
         config.usbDriver = prefs.getBoolean(USB_DRIVER_PREF_SRING, DEFAULT_USB_DRIVER);
         config.onscreenController = prefs.getBoolean(ONSCREEN_CONTROLLER_PREF_STRING, ONSCREEN_CONTROLLER_DEFAULT);
-        config.googleCardboardMode = prefs.getBoolean(GOOGLE_VR_PREF_SRING, GOOGLE_CARDBOARD_MODE);
 
         return config;
     }

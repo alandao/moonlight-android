@@ -41,6 +41,7 @@ import com.limelight.nvstream.input.MouseButtonPacket
 import com.limelight.ui.GameGestures
 import com.limelight.vr.VideoSceneRenderer
 import com.limelight.vr.MediaCodecDecoderRendererVR
+import com.limelight.vr.VRUtil.rot4ToQuaternion
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.Inet4Address
@@ -348,21 +349,15 @@ class VirtualRealityGame : Activity(), NvConnectionListener, EvdevListener,
                     gvrLayout!!.gvrApi.getHeadSpaceFromStartSpaceRotation(data,
                             System.nanoTime() + predictionOffsetNanos)
 
-                    var headposeOutput = ""
+                    val rotQuaternion = rot4ToQuaternion(data)
                     //for logging the matrix.
-                    for (i in 0..15) {
-                        if (i % 4 == 0)
-                            headposeOutput = headposeOutput + "\n" + data[i] + ", "
-                        else
-                            headposeOutput = headposeOutput + data[i] + ", "
-                    }
-                    Log.e( TAG, "4x4 values: " + headposeOutput)
+                    //Log.e( TAG, "Quaternion value: " + rotQuaternion[0] + ", " + rotQuaternion[1] + ", " + rotQuaternion[2] + ", " + rotQuaternion[3])
 
 
                     //convert float array to byte array
-                    val bb = ByteBuffer.allocate(data.size * 4)
+                    val bb = ByteBuffer.allocate(rotQuaternion.size * 4)
                     val fb = bb.asFloatBuffer()
-                    data.forEach { x -> fb.put(x) }
+                    rotQuaternion.forEach { x -> fb.put(x) }
 
                     val packet = DatagramPacket(bb.array(), bb.array().size, address, port)
                     socket.send(packet);

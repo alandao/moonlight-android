@@ -27,6 +27,7 @@ import android.os.*
 import android.util.Log
 import android.view.*
 import android.view.inputmethod.InputMethodManager
+import com.google.vr.sdk.base.HeadTransform
 import com.limelight.binding.input.ControllerHandler
 import com.limelight.binding.input.KeyboardTranslator
 import com.limelight.binding.input.TouchContext
@@ -40,6 +41,12 @@ import com.limelight.nvstream.input.MouseButtonPacket
 import com.limelight.ui.GameGestures
 import com.limelight.vr.VideoSceneRenderer
 import com.limelight.vr.MediaCodecDecoderRendererVR
+import java.net.DatagramPacket
+import java.net.DatagramSocket
+import java.net.Inet4Address
+import java.nio.ByteBuffer
+import java.util.concurrent.TimeUnit
+import kotlin.concurrent.thread
 import kotlin.experimental.and
 import kotlin.experimental.or
 
@@ -102,6 +109,9 @@ class VirtualRealityGame : Activity(), NvConnectionListener, EvdevListener,
     private var uniqueId: String? = null
     private var streamConfig: StreamConfiguration? = null
 
+    private var steamVRMode: Boolean = false
+    private var headTransformSenderThread: Thread? = null
+
     private fun setImmersiveSticky() {
         window
                 .decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_STABLE or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
@@ -125,6 +135,7 @@ class VirtualRealityGame : Activity(), NvConnectionListener, EvdevListener,
         val remote = this@VirtualRealityGame.intent.getBooleanExtra(EXTRA_STREAMING_REMOTE, false)
         val uuid = this@VirtualRealityGame.intent.getStringExtra(EXTRA_PC_UUID)
         val pcName = this@VirtualRealityGame.intent.getStringExtra(EXTRA_PC_NAME)
+        steamVRMode = this@VirtualRealityGame.intent.getBooleanExtra(EXTRA_STEAMVR, false)
 
         if (appId == StreamConfiguration.INVALID_APP_ID) {
             finish()
@@ -320,6 +331,48 @@ class VirtualRealityGame : Activity(), NvConnectionListener, EvdevListener,
         hasFirstFrame = false
         surfaceView!!.queueEvent { renderer!!.setHasVideoPlaybackStarted(false) }
 
+        //start sending head coordinates.
+        if (steamVRMode) {
+            headTransformSenderThread = Thread() {
+                //start sending head orientation coordinates
+                val port = 11000;
+                val address = Inet4Address.getByName("255.255.255.255")
+                val socket = DatagramSocket(port)
+
+                //Not sure of intent, but google vr sample code uses this
+                val predictionOffsetNanos = TimeUnit.MILLISECONDS.toNanos(50);
+
+                while (headTransformSenderThread == Thread.currentThread()) {
+                    //headpose is a 4x4 matrix, containing position and rotation.
+                    val data = FloatArray(16)
+                    gvrLayout!!.gvrApi.getHeadSpaceFromStartSpaceRotation(data,
+                            System.nanoTime() + predictionOffsetNanos)
+
+                    var headposeOutput = ""
+                    //for logging the matrix.
+                    for (i in 0..15) {
+                        if (i % 4 == 0)
+                            headposeOutput = headposeOutput + "\n" + data[i] + ", "
+                        else
+                            headposeOutput = headposeOutput + data[i] + ", "
+                    }
+                    Log.e( TAG, "4x4 values: " + headposeOutput)
+
+
+                    //convert float array to byte array
+                    val bb = ByteBuffer.allocate(data.size * 4)
+                    val fb = bb.asFloatBuffer()
+                    data.forEach { x -> fb.put(x) }
+
+                    val packet = DatagramPacket(bb.array(), bb.array().size, address, port)
+                    socket.send(packet);
+
+                    Thread.sleep(5);
+                }
+            }
+            headTransformSenderThread!!.start()
+        }
+
         //Resume the gvrLayout here. This will start the render thread and trigger a
         //new async reprojection video Surface to become available.
         gvrLayout!!.onResume()
@@ -328,6 +381,10 @@ class VirtualRealityGame : Activity(), NvConnectionListener, EvdevListener,
     }
 
     override fun onStop() {
+        //set the senderThread to null.
+        if (steamVRMode) {
+            headTransformSenderThread = null
+        }
 
         if (controllerHandler != null) {
             val inputManager = getSystemService(Context.INPUT_SERVICE) as InputManager
@@ -700,5 +757,6 @@ class VirtualRealityGame : Activity(), NvConnectionListener, EvdevListener,
         val EXTRA_STREAMING_REMOTE = "Remote"
         val EXTRA_PC_UUID = "UUID"
         val EXTRA_PC_NAME = "PcName"
+        val EXTRA_STEAMVR = "SteamVR"
     }
 }

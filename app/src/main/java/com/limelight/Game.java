@@ -142,6 +142,10 @@ public class Game extends Activity implements SurfaceHolder.Callback,
             startActivity(intent);
             finish();
         } else if (prefConfig.vrMode == PreferenceConfiguration.VR_STEAMVR) {
+            Intent intent = new Intent(this, VirtualRealityGame.class);
+            intent.putExtras(Game.this.getIntent());
+            intent.putExtra("SteamVR", true);
+            startActivity(intent);
             finish();
         } else {
 
